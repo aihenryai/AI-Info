@@ -19,25 +19,32 @@ const AIContentApp = () => {
       .then(csvData => {
         const rows = csvData.split('\n').slice(1);
         const parsedContent = rows.map(row => {
-          // פיצול לפי פסיק, אבל לא בתוך מרכאות כפולות
-          const [id, date, text, category] = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+          const [id, date, text, category] = row.split(',');
           return { 
             id: id.trim(), 
             date: date.trim(), 
-            text: text.replace(/^"|"$/g, '').trim(), // הסרת מרכאות מתחילת וסוף הטקסט
+            text: text.replace(/^"|"$/g, '').trim(),
             category: category.trim() 
           };
         });
         setContent(parsedContent);
-        console.log('Parsed content:', parsedContent); // לבדיקה
+        console.log('Parsed content:', parsedContent);
       })
       .catch(error => console.error('Error loading CSV:', error));
   }, []);
 
-  const filteredContent = content.filter(item => 
-    (selectedCategory ? item.category === selectedCategory : true) &&
-    (searchTerm ? item.text.toLowerCase().includes(searchTerm.toLowerCase()) : true)
-  );
+  const filteredContent = React.useMemo(() => {
+    const filtered = content.filter(item => 
+      (selectedCategory ? item.category === selectedCategory : true) &&
+      (searchTerm ? item.text.toLowerCase().includes(searchTerm.toLowerCase()) : true)
+    );
+    console.log('Filtered content for category:', selectedCategory, filtered);
+    return filtered;
+  }, [content, selectedCategory, searchTerm]);
+
+  console.log('Current selected category:', selectedCategory);
+  console.log('Current search term:', searchTerm);
+  console.log('Total content items:', content.length);
 
   return (
     React.createElement('div', { className: "container mx-auto p-4 rtl" },
