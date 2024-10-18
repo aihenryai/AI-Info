@@ -1,5 +1,3 @@
-// אין צורך ב-import או require כאן
-
 const AIContentApp = () => {
   const [selectedCategory, setSelectedCategory] = React.useState(null);
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -21,10 +19,17 @@ const AIContentApp = () => {
       .then(csvData => {
         const rows = csvData.split('\n').slice(1);
         const parsedContent = rows.map(row => {
-          const [id, date, text, category] = row.split(',');
-          return { id, date, text, category };
+          // פיצול לפי פסיק, אבל לא בתוך מרכאות כפולות
+          const [id, date, text, category] = row.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+          return { 
+            id: id.trim(), 
+            date: date.trim(), 
+            text: text.replace(/^"|"$/g, '').trim(), // הסרת מרכאות מתחילת וסוף הטקסט
+            category: category.trim() 
+          };
         });
         setContent(parsedContent);
+        console.log('Parsed content:', parsedContent); // לבדיקה
       })
       .catch(error => console.error('Error loading CSV:', error));
   }, []);
@@ -94,5 +99,4 @@ const AIContentApp = () => {
   );
 };
 
-// רנדור הקומפוננטה
 ReactDOM.render(React.createElement(AIContentApp), document.getElementById('root'));
