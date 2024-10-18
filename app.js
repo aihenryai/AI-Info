@@ -1,3 +1,5 @@
+// אין צורך ב-import או require כאן
+
 const AIContentApp = () => {
   const [selectedCategory, setSelectedCategory] = React.useState(null);
   const [searchTerm, setSearchTerm] = React.useState('');
@@ -92,4 +94,5 @@ const AIContentApp = () => {
   );
 };
 
+// רנדור הקומפוננטה
 ReactDOM.render(React.createElement(AIContentApp), document.getElementById('root'));
