@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Search, ExternalLink } from 'lucide-react';
+import { createRoot } from 'react-dom/client';
 
 const AIContentApp = () => {
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -22,8 +23,8 @@ const AIContentApp = () => {
       .then(csvData => {
         const rows = csvData.split('\n').slice(1);
         const parsedContent = rows.map(row => {
-          const [ID ,Date,Text,Category] = row.split(',');
-          return { ID ,Date,Text,Category };
+          const [id, date, text, category] = row.split(',');
+          return { id, date, text, category };
         });
         setContent(parsedContent);
       });
@@ -31,7 +32,7 @@ const AIContentApp = () => {
 
   const filteredContent = content.filter(item => 
     (selectedCategory ? item.category === selectedCategory : true) &&
-    (searchTerm ? item.text.includes(searchTerm) : true)
+    (searchTerm ? item.text.toLowerCase().includes(searchTerm.toLowerCase()) : true)
   );
 
   return (
@@ -72,7 +73,7 @@ const AIContentApp = () => {
           ))}
         </div>
       ) : (
-      <React.Fragment>
+        <React.Fragment>
           <h2 className="text-2xl font-bold mb-4">{selectedCategory}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredContent.map((item) => (
@@ -90,10 +91,11 @@ const AIContentApp = () => {
           >
             חזרה לקטגוריות
           </button>
-       </React.Fragment>
+        </React.Fragment>
       )}
     </div>
   );
 };
 
-ReactDOM.render(<AIContentApp />, document.getElementById('root'));
+const root = createRoot(document.getElementById('root'));
+root.render(<AIContentApp />);
