@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>תהליך עבודה מורחב: תוכנית אימונים ותזונה אישית</title>
     <style>
         body {
@@ -45,210 +43,105 @@
     </style>
 </head>
 <body>
-    <h1>תהליך עבודה מורחב: תוכנית אימונים ותזונה אישית</h1>
-    <h2>נוצר ע"י הנרי -  <a href="https://linktr.ee/henryai"> לחצו כאן לכל התכנים שלי </a><h2>
-    <div class="step">
-        <h2>1. שיחה עם מודל שפה על מטרות</h2>
-        <p>בשלב זה, נקיים שיחה מעמיקה עם מודל שפה מתקדם כמו Claude או GPT לבירור וניתוח המטרות האישיות שלך בתחום הכושר והבריאות. נדון ביעדים לטווח הקצר והארוך, ונבחן את המוטיבציות העומדות מאחוריהם.</p>
-        <div class="options">
-            <p><strong>אפשרות 1:</strong> שימוש בפרומפט מובנה מראש עם Claude.</p>
-            <p><strong>אפשרות 2:</strong> שימוש בפרומפט מובנה מראש עם GPT.</p>
+import React, { useState, useEffect } from 'react';
+import { Search, ExternalLink } from 'lucide-react';
+
+const AIContentApp = () => {
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [content, setContent] = useState([]);
+
+  const categories = [
+    { name: 'כלי בינה', color: 'bg-blue-500' },
+    { name: 'עדכונים', color: 'bg-green-500' },
+    { name: 'מדריכים', color: 'bg-yellow-500' },
+    { name: 'קורסים', color: 'bg-purple-500' },
+    { name: 'סדנאות', color: 'bg-red-500' },
+    { name: 'שונות', color: 'bg-gray-500' },
+    { name: 'אפלקציות', color: 'bg-pink-500' }
+  ];
+
+  useEffect(() => {
+    // כאן נטען את המידע מקובץ ה-CSV
+    fetch('path/to/your/csv/file.csv')
+      .then(response => response.text())
+      .then(csvData => {
+        const rows = csvData.split('\n').slice(1); // מדלג על שורת הכותרות
+        const parsedContent = rows.map(row => {
+          const [id, date, text, category] = row.split(',');
+          return { id, date, text, category };
+        });
+        setContent(parsedContent);
+      });
+  }, []);
+
+  const filteredContent = content.filter(item => 
+    (selectedCategory ? item.category === selectedCategory : true) &&
+    (searchTerm ? item.text.includes(searchTerm) : true)
+  );
+
+  return (
+    <div className="container mx-auto p-4 rtl">
+      <h1 className="text-3xl font-bold mb-4 text-center">בינה מלאכותית עם הנרי - עדכונים ומדריכים</h1>
+      
+      <div className="mb-8">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="חיפוש..."
+            className="w-full p-2 pr-8 border rounded-md"
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <Search className="absolute top-2 right-2 text-gray-400" size={20} />
         </div>
-        <p class="prompt">דוגמה לפרומפט: "בוא נדון במטרות הכושר והבריאות שלי לטווח הקצר והארוך. מה חשוב לי להשיג ומדוע? כיצד אלו משתלבות עם שאר תחומי חיי?"</p>
-    </div>
+      </div>
 
-    <div class="step bonus">
-        <h2>בונוס: יצירת "מפת חזון" ויזואלית</h2>
-        <p>כחלק מהשלב הראשון, ניצור ייצוג ויזואלי של המטרות והשאיפות שלך. זה יכול לשמש כמקור השראה ומוטיבציה לאורך התהליך.</p>
-        <div class="options">
-            <p><strong>אפשרות 1:</strong> יצירת ארטיפקט ויזואלי בקלוד.</p>
-            <p><strong>אפשרות 2:</strong> שימוש בכלי עיצוב גרפי מקוון ליצירת קולאז' או תרשים.</p>
-        </div>
-    </div>
+      <div className="bg-gray-100 p-4 rounded-md mb-8 text-right">
+        <h2 className="text-xl font-semibold mb-2">אודות</h2>
+        <p className="mb-2">הנרי שטאובר, מומחה בינה מלאכותית ויוצר תוכן</p>
+        <a href="https://taplink.cc/henry.ai" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center justify-end">
+          קישור לכל ערוצי הבינה המלאכותית שלי
+          <ExternalLink size={16} className="mr-1" />
+        </a>
+      </div>
 
-    <div class="step">
-        <h2>2. מילוי שאלון מידע אישי</h2>
-        <p>בשלב זה נאסוף מידע מקיף על מצבך הבריאותי, הרגלי החיים, והעדפות האישיות שלך. מידע זה ישמש כבסיס ליצירת תוכנית מותאמת אישית.</p>
-        <div class="options">
-            <p><strong>אפשרות 1:</strong> שימוש בטופס גוגל לאיסוף המידע אפשרות זו תאפשר לנו לחזור על השאלון בעתיד או לשתף אחרים בתוכנית.</p>
-            <p><strong>אפשרות 2:</strong> שימוש בפרומפט מובנה לקלוד או GPT לאיסוף המידע באמצעות שיחה.</p>
-        </div>
-        <p class="prompt">דוגמה לפרומפט: "אנא שאל אותי שאלות מקיפות על מצב הבריאות והמידע האישי שלי הנדרש ליצירת תוכנית אימונים מותאמת אישית. התייחס לגיל,
-             משקל, גובה, היסטוריה רפואית, רמת פעילות נוכחית, תזונה, ומטרות ספציפיות."</p>
-    </div>
-
-    <div class="step">
-        <h2>3. יצירת תכנית אימונים מותאמת אישית</h2>
-        <p>בהתבסס על המידע שנאסף בשלבים הקודמים, כולל המטרות האישיות והנתונים הבריאותיים, ניצור תוכנית אימונים מפורטת ומותאמת אישית.</p>
-        <div class="options">
-            <p><strong>אפשרות 1:</strong> שימוש בקלוד לניתוח הנתונים ויצירת התוכנית.</p>
-            <p><strong>אפשרות 2:</strong> שימוש ב-GPT-4 לניתוח הנתונים ויצירת התוכנית.</p>
-        </div>
-        <p>בנוסף, נשקול שילוב נתונים מ-Fitbit או Apple Watch (אם זמינים) להתאמה מדויקת יותר של התוכנית לרמת הפעילות והכושר הנוכחית שלך.</p>
-    </div>
-
-    <div class="step">
-        <h2>4. יצירת לו"ז אינטראקטיבי</h2>
-        <p>נפתח לוח זמנים מפורט ואינטראקטיבי שישלב את תוכנית האימונים עם שגרת היום-יום שלך.</p>
-        <div class="options">
-            <p><strong>אפשרות 1:</strong> שימוש בטבלת Google ויומן Google עם אינטגרציה ל-AI לניהול הלו"ז.</p>
-            <p><strong>אפשרות 2:</strong> יצירת ארטיפקט בקלוד לתצוגה ויזואלית של הלו"ז, שניתן לעדכן בקלות.</p>
-        </div>
-    </div>
-
-    <div class="step">
-        <h2>5. ביצוע אימונים</h2>
-        <p>בשלב זה נתמקד בביצוע האימונים עצמם, תוך שימוש בכלים טכנולוגיים לתמיכה והדרכה.</p>
-        <p>אפליקציות אימון מומלצות:</p>
-        <ul>
-            <li>Nike Training Club - מגוון רחב של אימונים מונחים</li>
-            <li>Fitbod - תוכניות אימונים מותאמות אישית</li>
-            <li>Strava - מעקב אחר ריצות ורכיבות אופניים</li>
-            <li>MyFitnessPal - מעקב אחר תזונה ופעילות גופנית</li>
-            <li>Seven - אימונים קצרים ואינטנסיביים</li>
-        </ul>
-        <p>נשלב שימוש בסרטוני YouTube לאימונים ספציפיים וצ'אט קולי באפליקציה עם ChatGPT לקבלת הנחיות והדרכה בזמן אמת.</p>
-    </div>
-
-    <div class="step">
-        <h2>6. שילוב כלי מעקב והתמדה</h2>
-        <p>נשתמש בכלים דיגיטליים למעקב אחר ההתקדמות ולעידוד ההתמדה בתוכנית.</p>
-        <div class="options">
-            <p><strong>אפשרות 1:</strong> יצירת בוט POE שיעזור בשאילת שאלות ומתן עצות על ההתקדמות.</p>
-            <p><strong>אפשרות 2:</strong> שימוש ב-Notion או טבלת גיליון אלקטרוני לתיעוד ומעקב מפורט.</p>
-        </div>
-        <p class="prompt">הנחיה לבוט POE: "אתה עוזר אישי לכושר ותזונה. תפקידך לעקוב אחר ההתקדמות, לשאול שאלות רלוונטיות ולספק עצות מועילות לשיפור. התחל בשאלה על הפעילות האחרונה ותן משוב בונה."</p>
-    </div>
-
-    
-        <div class="step">
-            <h2>7. הוספת תכנית תזונה</h2>
-            <p>בשלב זה, נפתח תוכנית תזונה מותאמת אישית שתתמוך ביעדי הכושר והבריאות שלך, תוך התחשבות בנתונים שנאספו בשלבים הקודמים.</p>
-            <div class="options">
-                <p><strong>אפשרות 1:</strong> שימוש ב-Google Lens + Gemini לזיהוי מזון ומתן משוב תזונתי בזמן אמת.</p>
-                <p><strong>אפשרות 2:</strong> יצירת בוט POE ייעודי לעזרה בתכנון ומעקב אחר התזונה.</p>
+      {!selectedCategory ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+          {categories.map((category) => (
+            <div
+              key={category.name}
+              className={`${category.color} text-white p-8 rounded-md cursor-pointer hover:opacity-90 transition-opacity flex items-center justify-center`}
+              onClick={() => setSelectedCategory(category.name)}
+            >
+              <h2 className="text-xl font-bold text-center">{category.name}</h2>
             </div>
-            <p class="prompt">פרומפט לבוט POE: "אתה תזונאי אישי AI. בהתבסס על המידע הבריאותי ויעדי הכושר שסופקו, אנא צור תוכנית תזונה שבועית מפורטת. כלול המלצות לארוחות, גודלי מנות, ועצות לאכילה בריאה. הסבר כיצד התוכנית תומכת ביעדי הכושר הספציפיים."</p>
+          ))}
         </div>
-    
-        <div class="step">
-            <h2>8. הצבת יעדים וסיכום תקופתי</h2>
-            <p>נקבע יעדים ברורים ומדידים לטווח הקצר והארוך, ונבצע סיכומים תקופתיים להערכת ההתקדמות.</p>
-            <div class="options">
-                <p><strong>אפשרות 1:</strong> יצירת "מפת דרכים" כארטיפקט בקלוד עם ציוני דרך ותגמולים.</p>
-                <p><strong>אפשרות 2:</strong> שימוש באפליקציית מעקב יעדים כמו Goalify או Strides.</p>
-            </div>
-            <p>נשלב אלמנטים של חיוביות והתמדה, כגון קהילה תומכת, משחוק, אתגרים, וחגיגת הישגים.</p>
-        </div>
-    
-        <div class="step">
-            <h2>9. בחינה מחדש והתאמת התכנית</h2>
-            <p>בתאריך היעד או בכל נקודת ציון משמעותית, נבצע הערכה מקיפה של התהליך ונתאים את התוכנית בהתאם.</p>
-            <div class="options">
-                <p><strong>אפשרות 1:</strong> קיום דיון מעמיק עם מודל שפה על ההישגים והאתגרים.</p>
-                <p><strong>אפשרות 2:</strong> שימוש בכלי ניתוח נתונים לבחינת מגמות והתקדמות לאורך זמן.</p>
-            </div>
-            <p class="prompt">פרומפט למודל שפה: "בהתבסס על הנתונים והמידע שנאסף לאורך התהליך, אנא נתח את ההתקדמות שלי לעבר היעדים שהוגדרו. זהה תחומים של הצלחה, אתגרים שנותרו, ותן המלצות מפורטות להתאמת התוכנית לשלב הבא. כיצד נוכל לשפר את התהליך ולהגביר את האפקטיביות שלו?"</p>
-        </div>
-    
-        <h2>סיכום</h2>
-        <p>תהליך העבודה הזה מספק מסגרת מקיפה ומותאמת אישית לשיפור הכושר והתזונה. הוא משלב טכנולוגיה מתקדמת, כלי בינה, ומעקב מתמיד כדי לתמוך בהשגת היעדים האישיים שלך. 
-        זכור שהגמישות והנכונות להתאמות הן מפתח להצלחה לטווח ארוך. המשך לבחון את התהליך ולהתאים אותו לצרכים המשתנים שלך.</p>
+      ) : (
+        <>
+          <h2 className="text-2xl font-bold mb-4">{selectedCategory}</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredContent.map((item) => (
+              <div key={item.id} className="bg-white p-4 rounded-md shadow">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm text-gray-500">{item.date}</span>
+                </div>
+                <p className="text-gray-600 mb-2">{item.text}</p>
+              </div>
+            ))}
+          </div>
+          <button
+            className="mt-4 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
+            onClick={() => setSelectedCategory(null)}
+          >
+            חזרה לקטגוריות
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
 
-        <h4>
-    להלן תרשים זרימה דינמי של התהליך:
-        </h4>
-    
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000">
-  <defs>
-    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
-      <polygon points="0 0, 10 3.5, 0 7" fill="#ff6600"/>
-    </marker>
-  </defs>
-  
-  <!-- Nodes -->
-  <g font-family="Arial, sans-serif" font-size="14">
-    <rect x="300" y="10" width="200" height="70" fill="#e6f3ff" stroke="#0066cc" stroke-width="2" rx="10"/>
-    <text x="400" y="35" text-anchor="middle">1. הגדרת מטרות</text>
-    <text x="400" y="55" text-anchor="middle">שיחה מעמיקה עם AI</text>
-    <text x="400" y="75" text-anchor="middle">על יעדי כושר ובריאות</text>
-    
-    <rect x="300" y="130" width="200" height="70" fill="#e6f3ff" stroke="#0066cc" stroke-width="2" rx="10"/>
-    <text x="400" y="155" text-anchor="middle">2. איסוף מידע אישי</text>
-    <text x="400" y="175" text-anchor="middle">שאלון מקיף על</text>
-    <text x="400" y="195" text-anchor="middle">בריאות והרגלים</text>
-    
-    <rect x="300" y="250" width="200" height="70" fill="#e6f3ff" stroke="#0066cc" stroke-width="2" rx="10"/>
-    <text x="400" y="275" text-anchor="middle">3. תכנון אימונים</text>
-    <text x="400" y="295" text-anchor="middle">יצירת תוכנית</text>
-    <text x="400" y="315" text-anchor="middle">מותאמת אישית</text>
-    
-    <rect x="300" y="370" width="200" height="70" fill="#e6f3ff" stroke="#0066cc" stroke-width="2" rx="10"/>
-    <text x="400" y="395" text-anchor="middle">4. יצירת לו״ז</text>
-    <text x="400" y="415" text-anchor="middle">תזמון אימונים</text>
-    <text x="400" y="435" text-anchor="middle">וארוחות ביומן</text>
-    
-    <rect x="300" y="490" width="200" height="70" fill="#e6f3ff" stroke="#0066cc" stroke-width="2" rx="10"/>
-    <text x="400" y="515" text-anchor="middle">5. אימונים ומעקב</text>
-    <text x="400" y="535" text-anchor="middle">שימוש באפליקציות</text>
-    <text x="400" y="555" text-anchor="middle">כושר ומעקב</text>
-    
-    <rect x="300" y="610" width="200" height="70" fill="#e6f3ff" stroke="#0066cc" stroke-width="2" rx="10"/>
-    <text x="400" y="635" text-anchor="middle">6. ניהול תזונה</text>
-    <text x="400" y="655" text-anchor="middle">תכנון תפריט</text>
-    <text x="400" y="675" text-anchor="middle">ומעקב תזונתי</text>
-    
-    <rect x="300" y="730" width="200" height="70" fill="#e6f3ff" stroke="#0066cc" stroke-width="2" rx="10"/>
-    <text x="400" y="755" text-anchor="middle">7. ניטור שוטף</text>
-    <text x="400" y="775" text-anchor="middle">שימוש בנושן, יומן</text>
-    <text x="400" y="795" text-anchor="middle">או בוט POE ייעודי</text>
-    
-    <rect x="550" y="370" width="200" height="70" fill="#e6f3ff" stroke="#0066cc" stroke-width="2" rx="10"/>
-    <text x="650" y="395" text-anchor="middle">8. בחינת התקדמות</text>
-    <text x="650" y="415" text-anchor="middle">ניתוח נתונים</text>
-    <text x="650" y="435" text-anchor="middle">וסיכום תקופתי</text>
-    
-    <rect x="50" y="370" width="200" height="70" fill="#e6f3ff" stroke="#0066cc" stroke-width="2" rx="10"/>
-    <text x="150" y="395" text-anchor="middle">9. התאמת התוכנית</text>
-    <text x="150" y="415" text-anchor="middle">שיפורים והתאמות</text>
-    <text x="150" y="435" text-anchor="middle">לפי הצורך</text>
-    
-    <rect x="550" y="130" width="200" height="70" fill="#e6f3ff" stroke="#0066cc" stroke-width="2" rx="10"/>
-    <text x="650" y="155" text-anchor="middle">בונוס: מפת חזון</text>
-    <text x="650" y="175" text-anchor="middle">יצירת תמונה ויזואלית</text>
-    <text x="650" y="195" text-anchor="middle">של היעדים</text>
-  </g>
-  
-  <!-- Connections -->
-  <g stroke="#ff6600" stroke-width="2" fill="none">
-    <path d="M400 80 L400 130" marker-end="url(#arrowhead)"/>
-    <path d="M400 200 L400 250" marker-end="url(#arrowhead)"/>
-    <path d="M400 320 L400 370" marker-end="url(#arrowhead)"/>
-    <path d="M400 440 L400 490" marker-end="url(#arrowhead)"/>
-    <path d="M400 560 L400 610" marker-end="url(#arrowhead)"/>
-    <path d="M400 680 L400 730" marker-end="url(#arrowhead)"/>
-    <path d="M500 765 L770 765 L770 405 L750 405" marker-end="url(#arrowhead)"/>
-    <path d="M550 405 L500 405" marker-end="url(#arrowhead)"/>
-    <path d="M300 405 L250 405" marker-end="url(#arrowhead)"/>
-    <path d="M50 405 L30 405 L30 45 L300 45" marker-end="url(#arrowhead)"/>
-    <path d="M550 165 L500 165" stroke-dasharray="5,5" marker-end="url(#arrowhead)"/>
-  </g>
-  
-  <!-- Labels -->
-  <g font-family="Arial, sans-serif" font-size="12" fill="#ff6600">
-    <text x="390" y="110" text-anchor="end">ניתוח והבנה</text>
-    <text x="390" y="230" text-anchor="end">עיבוד נתונים</text>
-    <text x="390" y="350" text-anchor="end">ארגון</text>
-    <text x="390" y="470" text-anchor="end">ביצוע</text>
-    <text x="390" y="590" text-anchor="end">ניטור</text>
-    <text x="390" y="710" text-anchor="end">מעקב</text>
-    <text x="765" y="580" text-anchor="middle" transform="rotate(-90 765,580)">הערכה</text>
-    <text x="35" y="230" text-anchor="middle" transform="rotate(90 35,230)">עדכון</text>
-    <text x="200" y="25" text-anchor="end">המשך</text>
-    <text x="540" y="145" text-anchor="start">המחשה</text>
-  </g>
-</svg>
-
-    
-    </body>
+export default AIContentApp;
+</body>
     </html>
