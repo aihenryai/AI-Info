@@ -22,8 +22,8 @@ const AIContentApp = () => {
       .then(csvData => {
         const rows = csvData.split('\n').slice(1);
         const parsedContent = rows.map(row => {
-          const [id, date, text, category] = row.split(',');
-          return { id, date, text, category };
+          const [ID ,Date,Text,Category] = row.split(',');
+          return { ID ,Date,Text,Category };
         });
         setContent(parsedContent);
       });
