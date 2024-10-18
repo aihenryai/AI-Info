@@ -18,15 +18,23 @@ const AIContentApp = () => {
       .then(response => response.text())
       .then(csvData => {
         const rows = csvData.split('\n').slice(1);
-        const parsedContent = rows.map(row => {
-          const [id, date, text, category] = row.split(',');
-          return { 
-            id: id.trim(), 
-            date: date.trim(), 
-            text: text.replace(/^"|"$/g, '').trim(),
-            category: category.trim() 
-          };
-        });
+        const parsedContent = rows.map((row, index) => {
+          // פיצול מתוחכם יותר שמתחשב בפסיקים בתוך מרכאות
+          const match = row.match(/(?:^|,)("(?:(?:"")*[^"]*)*"|[^,]*)/g);
+          if (match) {
+            const [id, date, text, category] = match.map(m => m.replace(/^,/, '').replace(/^"|"$/g, '').trim());
+            if (id && date && text && category) {
+              return { id, date, text, category };
+            } else {
+              console.warn(`Row ${index + 2} is incomplete:`, { id, date, text, category });
+              return null;
+            }
+          } else {
+            console.warn(`Row ${index + 2} could not be parsed:`, row);
+            return null;
+          }
+        }).filter(item => item !== null);
+        
         setContent(parsedContent);
         console.log('Parsed content:', parsedContent);
       })
