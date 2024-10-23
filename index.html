@@ -38,16 +38,15 @@
                 { name: 'אפלקציות', color: 'bg-pink-500', emoji: '📱' }
             ];
 
-            React.useEffect(() => {
-                loadContent();
-            }, []);
-
+            // הפונקציה המעודכנת לטעינת תוכן
             async function loadContent() {
                 try {
                     setIsLoading(true);
                     setDebug(prev => ({ ...prev, status: 'fetching' }));
 
-                    const response = await fetch('./data.csv');
+                    const basePath = window.location.pathname === '/' ? '' : window.location.pathname;
+                    const response = await fetch(`${basePath}/data.csv`);
+                    
                     setDebug(prev => ({ ...prev, status: 'received-response', responseStatus: response.status }));
 
                     if (!response.ok) {
@@ -55,27 +54,91 @@
                     }
                     
                     const text = await response.text();
-                    setDebug(prev => ({ ...prev, status: 'got-text', textLength: text.length }));
+                    setDebug(prev => ({ 
+                        ...prev, 
+                        status: 'got-text', 
+                        textLength: text.length,
+                        textPreview: text.slice(0, 100) 
+                    }));
 
                     if (!text.trim()) {
                         throw new Error('CSV file is empty');
                     }
 
-                    const lines = text.split('\n');
-                    setDebug(prev => ({ ...prev, status: 'split-lines', lineCount: lines.length }));
+                    const lines = text.split('\n')
+                        .map(line => line.trim())
+                        .filter(line => line.length > 0);
 
-                    const data = lines.slice(1).map(line => {
-                        const [id, date, ...rest] = line.split(',');
-                        const category = rest.pop()?.trim();
-                        const text = rest.join(',').trim();
-                        return { id, date, text, category };
-                    }).filter(item => item.id && item.text && item.category);
+                    setDebug(prev => ({ 
+                        ...prev, 
+                        status: 'split-lines', 
+                        lineCount: lines.length,
+                        firstLine: lines[0],
+                        lastLine: lines[lines.length - 1]
+                    }));
 
-                    setDebug(prev => ({ ...prev, status: 'parsed', itemCount: data.length }));
+                    const data = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        try {
+                            const line = lines[i];
+                            if (!line) continue;
+
+                            let currentField = '';
+                            let fields = [];
+                            let inQuotes = false;
+
+                            for (let j = 0; j < line.length; j++) {
+                                const char = line[j];
+                                if (char === '"') {
+                                    inQuotes = !inQuotes;
+                                    continue;
+                                }
+                                
+                                if (char === ',' && !inQuotes) {
+                                    fields.push(currentField);
+                                    currentField = '';
+                                    continue;
+                                }
+                                
+                                currentField += char;
+                            }
+                            
+                            fields.push(currentField);
+                            fields = fields.map(field => field.trim().replace(/^"|"$/g, ''));
+
+                            if (fields.length < 4) continue;
+
+                            const [id, date, ...rest] = fields;
+                            const category = rest.pop();
+                            const text = rest.join(',').trim();
+
+                            if (!id || !date || !text || !category) continue;
+
+                            data.push({
+                                id,
+                                date: date.trim(),
+                                text: text.trim(),
+                                category: category.trim()
+                            });
+                        } catch (err) {
+                            console.warn(`Error parsing line ${i}:`, err);
+                            continue;
+                        }
+                    }
+
+                    setDebug(prev => ({ 
+                        ...prev, 
+                        status: 'parsed', 
+                        itemCount: data.length,
+                        firstItem: data[0],
+                        lastItem: data[data.length - 1]
+                    }));
 
                     if (data.length === 0) {
                         throw new Error('No valid data found in CSV file');
                     }
+
+                    data.sort((a, b) => new Date(b.date) - new Date(a.date));
 
                     setContent(data);
                     setError(null);
@@ -83,11 +146,20 @@
                 } catch (err) {
                     console.error('Error:', err);
                     setError(`שגיאה בטעינת התוכן: ${err.message}`);
-                    setDebug(prev => ({ ...prev, status: 'error', error: err.message }));
+                    setDebug(prev => ({ 
+                        ...prev, 
+                        status: 'error', 
+                        error: err.message,
+                        errorStack: err.stack
+                    }));
                 } finally {
                     setIsLoading(false);
                 }
             }
+
+            React.useEffect(() => {
+                loadContent();
+            }, []);
 
             function formatDate(dateStr) {
                 try {
@@ -114,7 +186,6 @@
                     return sortOrder === 'desc' ? dateB - dateA : dateA - dateB;
                 });
 
-            // Debug Panel
             const DebugPanel = () => (
                 <div className="fixed bottom-4 left-4 bg-black text-white p-4 rounded-lg text-left opacity-75 hover:opacity-100" style={{direction: 'ltr'}}>
                     <h3 className="font-bold mb-2">Debug Info:</h3>
@@ -129,19 +200,6 @@
                             Reload Content
                         </button>
                     </div>
-                </div>
-            );
-
-            // Empty State Component
-            const EmptyState = ({ category }) => (
-                <div className="text-center p-8">
-                    <div className="text-6xl mb-4">📭</div>
-                    <h3 className="text-xl font-bold mb-2">אין תוכן בקטגוריה זו</h3>
-                    <p className="text-gray-500">
-                        {category ? 
-                            `לא נמצא תוכן בקטגוריה "${category}"` : 
-                            'לא נמצא תוכן כרגע'}
-                    </p>
                 </div>
             );
 
@@ -180,7 +238,7 @@
                             <input
                                 type="text"
                                 placeholder="חיפוש..."
-                                className="w-full p-4 border rounded-lg"
+                                className="w-full p-4 border rounded-lg text-center"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                             />
@@ -191,7 +249,7 @@
                                 {categories.map(cat => (
                                     <button
                                         key={cat.name}
-                                        className={`${cat.color} text-white p-6 rounded-lg text-center`}
+                                        className={`${cat.color} text-white p-6 rounded-lg text-center hover:opacity-90 transition-opacity`}
                                         onClick={() => setSelectedCategory(cat.name)}
                                     >
                                         <div className="text-3xl mb-2">{cat.emoji}</div>
@@ -211,31 +269,27 @@
                                     <h2 className="text-2xl font-bold mr-4">{selectedCategory}</h2>
                                 </div>
                                 
-                                {filteredContent.length > 0 ? (
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        {filteredContent.map(item => (
-                                            <div key={item.id} className="bg-white p-6 rounded-lg shadow">
-                                                <div className="text-sm text-gray-500 mb-2">
-                                                    {formatDate(item.date)}
-                                                </div>
-                                                <p className="mb-4 whitespace-pre-wrap">{item.text}</p>
-                                                {extractUrls(item.text).map((url, i) => (
-                                                    <a
-                                                        key={i}
-                                                        href={url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-blue-500 hover:underline block"
-                                                    >
-                                                        קישור {i + 1}
-                                                    </a>
-                                                ))}
+                                <div className="grid md:grid-cols-2 gap-6">
+                                    {filteredContent.map(item => (
+                                        <div key={item.id} className="bg-white p-6 rounded-lg shadow">
+                                            <div className="text-sm text-gray-500 mb-2">
+                                                {formatDate(item.date)}
                                             </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <EmptyState category={selectedCategory} />
-                                )}
+                                            <p className="mb-4 whitespace-pre-wrap">{item.text}</p>
+                                            {extractUrls(item.text).map((url, i) => (
+                                                <a
+                                                    key={i}
+                                                    href={url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-blue-500 hover:underline block"
+                                                >
+                                                    קישור {i + 1}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
                         )}
                     </div>
