@@ -50,102 +50,103 @@ async function loadContent() {
         }
         
         const text = await response.text();
-        
-        // Split into lines and clean
+
+        // Split into lines and remove empty ones
         const lines = text
             .split('\n')
             .map(line => line.trim())
-            .filter(line => line && line !== ',,,' && !line.match(/^[\s,]*$/));
+            .filter(line => line && !line.match(/^,+$/));
 
-        setDebug(prev => ({
-            ...prev,
-            status: 'processing',
-            lineCount: lines.length,
-            headerLine: lines[0],
-            firstDataLine: lines[1]
-        }));
-
-        // Process data
+        // Process the content
         const data = [];
-        let currentEntry = null;
-        let textBuffer = [];
+        let currentItem = null;
+        let contentBuffer = [];
+
+        const dateRegex = /^\d+,\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}/;
 
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i];
             
-            // Try to match the start of a new entry
-            const entryMatch = line.match(/^(\d+),(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}),(.*)$/);
-            
-            if (entryMatch) {
-                // If we have a previous entry, save it
-                if (currentEntry) {
-                    currentEntry.text = textBuffer.join('\n').replace(/"{2,}/g, '"');
-                    data.push(currentEntry);
+            // Check if this line starts a new item
+            if (dateRegex.test(line)) {
+                // Save previous item if exists
+                if (currentItem && contentBuffer.length > 0) {
+                    // Find the last real line with a category
+                    let lastContentLine = contentBuffer[contentBuffer.length - 1];
+                    let categoryMatch = lastContentLine.match(/,([^,]+)$/);
+                    
+                    if (categoryMatch) {
+                        currentItem.category = categoryMatch[1].trim();
+                        currentItem.text = contentBuffer
+                            .slice(0, -1)
+                            .join('\n')
+                            .replace(/^"/, '')
+                            .replace(/"$/, '')
+                            .replace(/"{2}/g, '"')
+                            .trim();
+                        
+                        if (currentItem.id && currentItem.date && currentItem.text && currentItem.category) {
+                            data.push(currentItem);
+                        }
+                    }
                 }
-                
-                // Start new entry
-                textBuffer = [entryMatch[3]];
-                currentEntry = {
-                    id: entryMatch[1],
-                    date: entryMatch[2],
-                    text: '',
-                    category: ''
-                };
-            } else if (currentEntry) {
-                // This line is continuation of the previous entry's text
-                textBuffer.push(line);
+
+                // Start new item
+                const [id, date, ...rest] = line.split(',');
+                currentItem = { id: id.trim(), date: date.trim(), text: '', category: '' };
+                contentBuffer = [...rest];
+            } else if (currentItem) {
+                contentBuffer.push(line);
             }
         }
 
-        // Don't forget to add the last entry
-        if (currentEntry) {
-            // Process the accumulated text to separate content and category
-            const fullText = textBuffer.join('\n');
-            const lastCommaIndex = fullText.lastIndexOf(',');
+        // Don't forget to add the last item
+        if (currentItem && contentBuffer.length > 0) {
+            let lastContentLine = contentBuffer[contentBuffer.length - 1];
+            let categoryMatch = lastContentLine.match(/,([^,]+)$/);
             
-            if (lastCommaIndex !== -1) {
-                currentEntry.text = fullText.slice(0, lastCommaIndex).trim()
+            if (categoryMatch) {
+                currentItem.category = categoryMatch[1].trim();
+                currentItem.text = contentBuffer
+                    .slice(0, -1)
+                    .join('\n')
                     .replace(/^"/, '')
                     .replace(/"$/, '')
-                    .replace(/"{2,}/g, '"');
-                currentEntry.category = fullText.slice(lastCommaIndex + 1).trim();
-                data.push(currentEntry);
+                    .replace(/"{2}/g, '"')
+                    .trim();
+                
+                if (currentItem.id && currentItem.date && currentItem.text && currentItem.category) {
+                    data.push(currentItem);
+                }
             }
         }
+
+        // Filter out invalid entries and sort by date
+        const validData = data
+            .filter(item => 
+                item.id && 
+                item.date && 
+                item.text && 
+                item.category &&
+                !isNaN(new Date(item.date).getTime())
+            )
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
 
         setDebug(prev => ({
             ...prev,
             status: 'parsed',
-            itemCount: data.length,
-            firstItem: data[0],
-            lastItem: data[data.length - 1],
-            sampleItems: data.slice(0, 3)
+            itemCount: validData.length,
+            firstItem: validData[0],
+            lastItem: validData[validData.length - 1]
         }));
 
-        if (data.length === 0) {
+        if (validData.length === 0) {
             throw new Error('לא נמצא מידע תקין בקובץ');
         }
 
-        // Sort by date
-        data.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-        // Clean up any invalid entries
-        const validData = data.filter(item => 
-            item.id && 
-            item.date && 
-            item.text && 
-            item.category &&
-            !isNaN(new Date(item.date).getTime())
-        );
-
         setContent(validData);
         setError(null);
-        
-        setDebug(prev => ({
-            ...prev,
-            status: 'success',
-            finalCount: validData.length
-        }));
+        setDebug(prev => ({ ...prev, status: 'success' }));
 
     } catch (err) {
         console.error('Error:', err);
