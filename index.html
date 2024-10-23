@@ -39,104 +39,63 @@
             ];
 
             // הפונקציה המעודכנת לטעינת תוכן
-    async function loadContent() {
+async function loadContent() {
     try {
         setIsLoading(true);
         setDebug(prev => ({ ...prev, status: 'fetching' }));
 
-        // נסה לטעון את הקובץ
         const response = await fetch('data.csv');
-        setDebug(prev => ({ 
-            ...prev, 
-            status: 'received-response', 
-            responseStatus: response.status,
-            responseStatusText: response.statusText 
-        }));
-
+        
         if (!response.ok) {
-            throw new Error(`Network response was not ok: ${response.status} ${response.statusText}`);
+            throw new Error(`Network response was not ok: ${response.status}`);
         }
         
         const text = await response.text();
         
-        // בדיקת תוכן הקובץ
-        setDebug(prev => ({ 
-            ...prev, 
-            status: 'got-text', 
-            textLength: text.length,
-            textPreview: text.slice(0, 200),
-            encoding: document.characterSet
-        }));
-
-        if (!text.trim()) {
-            throw new Error('CSV file is empty');
-        }
-
-        // פיצול לשורות ונקיון
-        const lines = text
+        // מסיר שורות ריקות מהסוף
+        const cleanedText = text.replace(/(\n,,,)+$/, '');
+        
+        const lines = cleanedText
             .split('\n')
             .map(line => line.trim())
-            .filter(line => line && line.length > 0);
+            .filter(line => line && !line.startsWith(',,,'));
 
-        setDebug(prev => ({ 
-            ...prev, 
-            status: 'split-lines', 
-            lineCount: lines.length,
-            headerLine: lines[0],
-            firstDataLine: lines[1]
-        }));
+        // מתעלם משורת הכותרת
+        const data = [];
+        let currentItem = {};
+        let textAccumulator = [];
 
-        // וידוא שיש לנו כותרת ולפחות שורת נתונים אחת
-        if (lines.length < 2) {
-            throw new Error('CSV file must contain a header row and at least one data row');
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i];
+            if (!line) continue;
+
+            const matches = line.match(/^(\d+),(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}),(.+),(.+)$/);
+            
+            if (matches) {
+                // אם יש לנו פריט קודם, נוסיף אותו לרשימה
+                if (currentItem.id) {
+                    currentItem.text = textAccumulator.join('\n');
+                    data.push(currentItem);
+                    textAccumulator = [];
+                }
+                
+                // נתחיל פריט חדש
+                currentItem = {
+                    id: matches[1],
+                    date: matches[2],
+                    text: matches[3],
+                    category: matches[4].trim()
+                };
+            } else {
+                // אם השורה לא תואמת את הפורמט, נוסיף אותה לטקסט של הפריט הנוכחי
+                textAccumulator.push(line);
+            }
         }
 
-        const data = [];
-        
-        // התחל מהשורה השנייה (אחרי הכותרות)
-        for (let i = 1; i < lines.length; i++) {
-            try {
-                const line = lines[i];
-                
-                // פיצול השורה לשדות תוך התחשבות במרכאות
-                let fields = [];
-                let currentField = '';
-                let inQuotes = false;
-                
-                for (let char of line) {
-                    if (char === '"') {
-                        inQuotes = !inQuotes;
-                    } else if (char === ',' && !inQuotes) {
-                        fields.push(currentField);
-                        currentField = '';
-                    } else {
-                        currentField += char;
-                    }
-                }
-                fields.push(currentField);
-
-                // ניקוי השדות
-                fields = fields.map(field => 
-                    field.trim()
-                        .replace(/^"/, '')
-                        .replace(/"$/, '')
-                        .replace(/""/g, '"')
-                );
-
-                const [id, date, text, category] = fields;
-
-                if (id && date && text && category) {
-                    data.push({
-                        id: id.trim(),
-                        date: date.trim(),
-                        text: text.trim(),
-                        category: category.trim()
-                    });
-                }
-            } catch (err) {
-                console.warn(`Error parsing line ${i}:`, err, lines[i]);
-                continue;
-            }
+        // נוסיף את הפריט האחרון
+        if (currentItem.id) {
+            currentItem.text = textAccumulator.join('\n');
+            data.push(currentItem);
         }
 
         setDebug(prev => ({ 
@@ -159,12 +118,12 @@
         setDebug(prev => ({ ...prev, status: 'success' }));
 
     } catch (err) {
-        console.error('Error loading content:', err);
+        console.error('Error:', err);
         setError(`שגיאה בטעינת התוכן: ${err.message}`);
         setDebug(prev => ({ 
             ...prev, 
             status: 'error', 
-            errorMessage: err.message,
+            error: err.message,
             errorStack: err.stack
         }));
     } finally {
