@@ -38,7 +38,6 @@
                 { name: 'אפלקציות', color: 'bg-pink-500', emoji: '📱' }
             ];
 
-            // הפונקציה המעודכנת לטעינת תוכן
 async function loadContent() {
     try {
         setIsLoading(true);
@@ -52,77 +51,108 @@ async function loadContent() {
         
         const text = await response.text();
         
-        // מסיר שורות ריקות מהסוף
-        const cleanedText = text.replace(/(\n,,,)+$/, '');
-        
-        const lines = cleanedText
+        // Split into lines and clean
+        const lines = text
             .split('\n')
             .map(line => line.trim())
-            .filter(line => line && !line.startsWith(',,,'));
+            .filter(line => line && line !== ',,,' && !line.match(/^[\s,]*$/));
 
-        // מתעלם משורת הכותרת
+        setDebug(prev => ({
+            ...prev,
+            status: 'processing',
+            lineCount: lines.length,
+            headerLine: lines[0],
+            firstDataLine: lines[1]
+        }));
+
+        // Process data
         const data = [];
-        let currentItem = {};
-        let textAccumulator = [];
+        let currentEntry = null;
+        let textBuffer = [];
 
         for (let i = 1; i < lines.length; i++) {
             const line = lines[i];
-            if (!line) continue;
-
-            const matches = line.match(/^(\d+),(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}),(.+),(.+)$/);
             
-            if (matches) {
-                // אם יש לנו פריט קודם, נוסיף אותו לרשימה
-                if (currentItem.id) {
-                    currentItem.text = textAccumulator.join('\n');
-                    data.push(currentItem);
-                    textAccumulator = [];
+            // Try to match the start of a new entry
+            const entryMatch = line.match(/^(\d+),(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}),(.*)$/);
+            
+            if (entryMatch) {
+                // If we have a previous entry, save it
+                if (currentEntry) {
+                    currentEntry.text = textBuffer.join('\n').replace(/"{2,}/g, '"');
+                    data.push(currentEntry);
                 }
                 
-                // נתחיל פריט חדש
-                currentItem = {
-                    id: matches[1],
-                    date: matches[2],
-                    text: matches[3],
-                    category: matches[4].trim()
+                // Start new entry
+                textBuffer = [entryMatch[3]];
+                currentEntry = {
+                    id: entryMatch[1],
+                    date: entryMatch[2],
+                    text: '',
+                    category: ''
                 };
-            } else {
-                // אם השורה לא תואמת את הפורמט, נוסיף אותה לטקסט של הפריט הנוכחי
-                textAccumulator.push(line);
+            } else if (currentEntry) {
+                // This line is continuation of the previous entry's text
+                textBuffer.push(line);
             }
         }
 
-        // נוסיף את הפריט האחרון
-        if (currentItem.id) {
-            currentItem.text = textAccumulator.join('\n');
-            data.push(currentItem);
+        // Don't forget to add the last entry
+        if (currentEntry) {
+            // Process the accumulated text to separate content and category
+            const fullText = textBuffer.join('\n');
+            const lastCommaIndex = fullText.lastIndexOf(',');
+            
+            if (lastCommaIndex !== -1) {
+                currentEntry.text = fullText.slice(0, lastCommaIndex).trim()
+                    .replace(/^"/, '')
+                    .replace(/"$/, '')
+                    .replace(/"{2,}/g, '"');
+                currentEntry.category = fullText.slice(lastCommaIndex + 1).trim();
+                data.push(currentEntry);
+            }
         }
 
-        setDebug(prev => ({ 
-            ...prev, 
-            status: 'parsed', 
+        setDebug(prev => ({
+            ...prev,
+            status: 'parsed',
             itemCount: data.length,
             firstItem: data[0],
-            lastItem: data[data.length - 1]
+            lastItem: data[data.length - 1],
+            sampleItems: data.slice(0, 3)
         }));
 
         if (data.length === 0) {
-            throw new Error('No valid data found in CSV file');
+            throw new Error('לא נמצא מידע תקין בקובץ');
         }
 
-        // מיון לפי תאריך
+        // Sort by date
         data.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-        setContent(data);
+        // Clean up any invalid entries
+        const validData = data.filter(item => 
+            item.id && 
+            item.date && 
+            item.text && 
+            item.category &&
+            !isNaN(new Date(item.date).getTime())
+        );
+
+        setContent(validData);
         setError(null);
-        setDebug(prev => ({ ...prev, status: 'success' }));
+        
+        setDebug(prev => ({
+            ...prev,
+            status: 'success',
+            finalCount: validData.length
+        }));
 
     } catch (err) {
         console.error('Error:', err);
         setError(`שגיאה בטעינת התוכן: ${err.message}`);
-        setDebug(prev => ({ 
-            ...prev, 
-            status: 'error', 
+        setDebug(prev => ({
+            ...prev,
+            status: 'error',
             error: err.message,
             errorStack: err.stack
         }));
@@ -130,7 +160,6 @@ async function loadContent() {
         setIsLoading(false);
     }
 }
-
             React.useEffect(() => {
                 loadContent();
             }, []);
